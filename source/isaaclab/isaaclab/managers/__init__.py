@@ -25,6 +25,7 @@ from .manager_term_cfg import (
     ObservationTermCfg,
     RecorderTermCfg,
     RewardTermCfg,
+    RewardGroupCfg,
     TerminationTermCfg,
 )
 from .observation_manager import ObservationManager

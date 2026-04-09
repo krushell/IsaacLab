@@ -108,9 +108,10 @@ def test_config_equivalence(env):
     assert rew_man_from_cfg.active_terms == rew_man_from_annotated_cfg.active_terms
     assert rew_man_from_dict.active_terms == rew_man_from_cfg.active_terms
     # parsed term configs
-    assert rew_man_from_dict._term_cfgs == rew_man_from_annotated_cfg._term_cfgs
-    assert rew_man_from_cfg._term_cfgs == rew_man_from_annotated_cfg._term_cfgs
-    assert rew_man_from_dict._term_cfgs == rew_man_from_cfg._term_cfgs
+    for term_name in ["my_term", "your_term", "his_term"]:
+        assert rew_man_from_dict.get_term_cfg(term_name) == rew_man_from_annotated_cfg.get_term_cfg(term_name)
+        assert rew_man_from_cfg.get_term_cfg(term_name) == rew_man_from_annotated_cfg.get_term_cfg(term_name)
+        assert rew_man_from_dict.get_term_cfg(term_name) == rew_man_from_cfg.get_term_cfg(term_name)
 
 
 def test_compute(env):
@@ -155,6 +156,79 @@ def test_active_terms(env):
     rew_man = RewardManager(cfg, env)
 
     assert len(rew_man.active_terms) == 3
+
+
+def test_get_term_cfg_no_group(env):
+    """Test term lookup for ungrouped rewards."""
+    cfg = {
+        "term_1": RewardTermCfg(func=grilled_chicken, weight=10),
+        "term_2": RewardTermCfg(func=grilled_chicken, weight=2),
+    }
+    rew_man = RewardManager(cfg, env)
+
+    assert rew_man.get_term_cfg("term_1") == cfg["term_1"]
+
+    with pytest.raises(ValueError, match="invalid for ungrouped rewards"):
+        rew_man.get_term_cfg("reward/term_1")
+
+
+def test_get_term_cfg_grouped(env):
+    """Test term lookup for grouped rewards."""
+    cfg = {
+        "group_a": {
+            "term_1": RewardTermCfg(func=grilled_chicken, weight=10),
+            "term_2": RewardTermCfg(func=grilled_chicken, weight=2),
+        },
+        "group_b": {
+            "term_3": RewardTermCfg(func=grilled_chicken, weight=3),
+        },
+    }
+    rew_man = RewardManager(cfg, env)
+
+    assert rew_man.get_term_cfg("group_a/term_1") == cfg["group_a"]["term_1"]
+
+    with pytest.raises(ValueError, match="ambiguous for grouped rewards"):
+        rew_man.get_term_cfg("term_1")
+    with pytest.raises(ValueError, match="Reward group 'missing' not found."):
+        rew_man.get_term_cfg("missing/term_1")
+
+
+def test_get_active_iterable_terms_no_group(env):
+    """Test active iterable terms for ungrouped rewards."""
+    cfg = {
+        "term_1": RewardTermCfg(func=grilled_chicken, weight=10),
+        "term_2": RewardTermCfg(func=grilled_chicken, weight=2),
+    }
+    rew_man = RewardManager(cfg, env)
+
+    rew_man.compute(dt=env.dt)
+
+    assert rew_man.get_active_iterable_terms(0) == [
+        ("term_1", [10.0]),
+        ("term_2", [2.0]),
+    ]
+
+
+def test_get_active_iterable_terms_grouped(env):
+    """Test active iterable terms for grouped rewards."""
+    cfg = {
+        "group_a": {
+            "term_1": RewardTermCfg(func=grilled_chicken, weight=10),
+            "term_2": RewardTermCfg(func=grilled_chicken, weight=2),
+        },
+        "group_b": {
+            "term_3": RewardTermCfg(func=grilled_chicken, weight=3),
+        },
+    }
+    rew_man = RewardManager(cfg, env)
+
+    rew_man.compute(dt=env.dt)
+
+    assert rew_man.get_active_iterable_terms(0) == [
+        ("group_a-term_1", [10.0]),
+        ("group_a-term_2", [2.0]),
+        ("group_b-term_3", [3.0]),
+    ]
 
 
 def test_missing_weight(env):

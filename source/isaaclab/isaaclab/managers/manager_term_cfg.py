@@ -329,7 +329,9 @@ class RewardTermCfg(ManagerTermBaseCfg):
         If the weight is zero, the reward term is ignored.
     """
 
-
+@configclass
+class RewardGroupCfg:
+    pass
 ##
 # Termination manager.
 ##
