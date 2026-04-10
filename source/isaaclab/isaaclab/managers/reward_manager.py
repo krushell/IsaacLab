@@ -305,6 +305,8 @@ class RewardManager(ManagerBase):
 
         # iterate over all the groups
         for group_name, group_cfg in cfg_items:
+            if group_cfg is None:
+                continue
             self._group_term_names[group_name] = list()
             self._group_term_cfgs[group_name] = list()
             self._group_class_term_cfgs[group_name] = list()
